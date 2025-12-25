@@ -11,52 +11,16 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <style>
-*{box-sizing:border-box}
-body{
-  margin:0;
-  font-family:Orbitron;
-  background:radial-gradient(circle at top,#050505,#000);
-  color:#00ffcc;
-  overflow-x:hidden;
-}
-
-/* MATRIX BACKGROUND */
-body:before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      rgba(0,255,204,.04) 0px,
-      rgba(0,255,204,.04) 1px,
-      transparent 2px,
-      transparent 4px
-    );
-  pointer-events:none;
-}
-
-.container{
-  max-width:950px;
-  margin:auto;
-  padding:20px;
-}
-
+body{margin:0;font-family:Orbitron;background:#000;color:#00ffcc}
+.container{max-width:900px;margin:auto;padding:20px}
 .card{
-  background:rgba(0,0,0,.85);
+  background:#050505;
+  border:1px solid #00ffcc55;
   border-radius:14px;
-  padding:16px;
-  margin-top:18px;
-  border:1px solid rgba(0,255,204,.25);
-  box-shadow:0 0 25px rgba(0,255,204,.15);
-  animation:fadeUp .6s ease;
+  padding:15px;
+  margin-top:15px;
+  box-shadow:0 0 20px #00ffcc33;
 }
-
-@keyframes fadeUp{
-  from{opacity:0;transform:translateY(20px)}
-  to{opacity:1;transform:none}
-}
-
 input,button{
   width:100%;
   padding:12px;
@@ -65,159 +29,137 @@ input,button{
   border:none;
   font-family:Orbitron;
 }
-
-input{
-  background:#000;
-  border:1px solid #00ffcc;
-  color:#00ffcc;
-}
-
-button{
-  background:linear-gradient(90deg,#00ffcc,#00aa88);
-  color:#000;
-  font-weight:700;
-  cursor:pointer;
-  transition:.25s;
-}
-
-button:hover{
-  filter:brightness(1.2);
-  box-shadow:0 0 15px #00ffcc;
-}
-
-button.off{
-  background:#111;
-  color:#ff5555;
-  border:1px solid #ff5555;
-}
-
-.status{
-  margin-top:8px;
-  font-size:12px;
-  min-height:14px;
-}
-
+input{background:#000;border:1px solid #00ffcc;color:#00ffcc}
+button{background:#00ffcc;color:#000;font-weight:700}
+button.off{background:#111;color:#ff4444;border:1px solid #ff4444}
+.status{font-size:12px;margin-top:6px}
 .hidden{display:none}
-
-.scan{
-  font-size:11px;
-  opacity:.6;
-  animation:blink 1.5s infinite;
-}
-
-@keyframes blink{
-  50%{opacity:.2}
-}
 </style>
 </head>
 
 <body>
 
-<!-- 🔐 LOGIN -->
+<!-- LOGIN -->
 <div class="container" id="loginBox">
   <div class="card">
-    <h3>🔐 ADMIN ACCESS</h3>
+    <h3>ADMIN LOGIN</h3>
     <input id="email" placeholder="Email">
     <input id="pass" type="password" placeholder="Password">
-    <button onclick="login()">AUTHENTICATE</button>
-    <div class="scan">Firewall • Encrypt • Verify</div>
+    <button onclick="login()">LOGIN</button>
   </div>
 </div>
 
-<!-- 🔥 ADMIN PANEL -->
+<!-- PANEL -->
 <div class="container hidden" id="panel">
-  <h2>🟢 BIG MUMBAI SERVER ONLINE</h2>
+  <h2>BIG MUMBAI SERVER</h2>
   <div id="uids"></div>
-  <button onclick="addUID()">➕ ADD UID NODE</button>
+  <button onclick="addUID()">➕ ADD UID</button>
 </div>
 
 <script>
-/* ---------------- LOGIN ---------------- */
+/* ================= LOGIN PERSIST ================= */
 function login(){
   if(email.value==="admin@gmail.com" && pass.value==="admin902zx"){
-    loginBox.classList.add("hidden");
-    panel.classList.remove("hidden");
-  }else alert("ACCESS DENIED");
+    localStorage.setItem("logged","yes");
+    openPanel();
+  }else alert("Wrong login");
 }
 
-/* ---------------- FIREBASE ---------------- */
+function openPanel(){
+  loginBox.classList.add("hidden");
+  panel.classList.remove("hidden");
+}
+
+if(localStorage.getItem("logged")==="yes"){
+  openPanel();
+}
+
+/* ================= FIREBASE ================= */
 firebase.initializeApp({
-  apiKey: "AIzaSyCgUHPXpBvpi0cEF2vQ2z8J-c8jI1cj1ko",
-  databaseURL: "https://admin-pannel-de3f4-default-rtdb.firebaseio.com",
-  projectId: "admin-pannel-de3f4"
+  apiKey:"AIzaSyCgUHPXpBvpi0cEF2vQ2z8J-c8jI1cj1ko",
+  databaseURL:"https://admin-pannel-de3f4-default-rtdb.firebaseio.com",
+  projectId:"admin-pannel-de3f4"
 });
 const db=firebase.database();
 
-/* ---------------- API (1 MIN) ---------------- */
+/* ================= API ================= */
 const API_URL="https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json?pageSize=10&pageNo=1";
 
 let uidCount=0;
 let loops={};
+let lastIssueMap={};
 
-/* ---------------- SEED ENGINE ---------------- */
-function makeSeed(){
-  return Date.now()*53 ^ performance.now()*1000000 ^ Math.floor(Math.random()*88888888);
-}
-
-/* ---------------- ADD UID ---------------- */
+/* ================= ADD UID ================= */
 function addUID(){
   uidCount++;
   uids.innerHTML+=`
   <div class="card">
-    <h4>UID NODE ${uidCount}</h4>
+    <h4>UID ${uidCount}</h4>
     <input id="uid_${uidCount}" placeholder="Enter UID">
     <button onclick="connect(${uidCount})">SERVER CONNECT</button>
     <button class="off" onclick="off(${uidCount})">SERVER OFF</button>
-    <div class="status scan" id="st_${uidCount}">Idle</div>
+    <div class="status" id="st_${uidCount}">Idle</div>
   </div>`;
 }
 
-/* ---------------- 3 LEVEL FIX ENGINE ---------------- */
-function predictTrend(nums){
-  let big=0,small=0;
-  nums.forEach(n=>n>=5?big++:small++);
-
-  Math.seedrandom(makeSeed());
-
-  let r1=Math.floor(Math.random()*100);
-  let L1= big>small+2 ? "SMALL" : small>big+2 ? "BIG" : (r1<52?"BIG":"SMALL");
-
-  let r2=Math.floor(Math.random()*100);
-  let L2=r2>=68 ? (L1==="BIG"?"SMALL":"BIG") : L1;
-
-  let r3=Math.floor(Math.random()*100);
-  let L3=r3>=88 ? (L2==="BIG"?"SMALL":"BIG") : L2;
-
-  let num=Math.floor(Math.random()*10);
-  return L3+" "+num;
-}
-
-/* ---------------- FETCH + SEND ---------------- */
-async function send(uid,st){
-  const r=await fetch(API_URL+"&t="+Date.now());
-  const j=await r.json();
-  const nums=j.data.list.map(x=>Number(x.number));
-  const res=predictTrend(nums);
-
-  await db.ref("prediction/"+uid).set({
-    prediction:res,
-    time:Date.now()
+/* ================= PREDICTION LOGIC ================= */
+function predictNext(nums){
+  let score=0;
+  nums.forEach((n,i)=>{
+    let w=10-i;
+    score+=(n>=5?w:-w);
   });
 
-  st.innerText="CONNECTED ✓ | "+res;
+  let big=nums.filter(n=>n>=5).length;
+  let small=nums.length-big;
+  if(big>=8)score-=10;
+  if(small>=8)score+=10;
+
+  score+=Math.floor(Math.random()*7)-3;
+
+  let side=score>=0?"BIG":"SMALL";
+  let num=side==="BIG"?6+Math.floor(Math.random()*4):Math.floor(Math.random()*5);
+  return side+" "+num;
 }
 
-/* ---------------- CONNECT ---------------- */
+/* ================= FETCH + SEND ================= */
+async function send(uid,st){
+  try{
+    const r=await fetch(API_URL+"&t="+Date.now(),{cache:"no-store"});
+    const j=await r.json();
+    const list=j.data.list;
+    const issue=list[0].issueNumber;
+
+    if(lastIssueMap[uid]===issue)return;
+    lastIssueMap[uid]=issue;
+
+    const nums=list.map(x=>Number(x.number));
+    const res=predictNext(nums);
+
+    await db.ref("prediction/"+uid).set({
+      prediction:res,
+      issue:issue,
+      time:Date.now()
+    });
+
+    st.innerText="Connected ✓ | "+res;
+  }catch(e){
+    st.innerText="Reconnecting...";
+  }
+}
+
+/* ================= CONNECT ================= */
 function connect(i){
   const uid=document.getElementById("uid_"+i).value;
   const st=document.getElementById("st_"+i);
   if(!uid||loops[uid])return;
-  st.innerText="HANDSHAKE...";
+
+  localStorage.setItem("uid_"+uid,"on");
   send(uid,st);
   loops[uid]=setInterval(()=>send(uid,st),60000);
 }
 
-/* ---------------- OFF ---------------- */
+/* ================= OFF ================= */
 function off(i){
   const uid=document.getElementById("uid_"+i).value;
   const st=document.getElementById("st_"+i);
@@ -225,13 +167,33 @@ function off(i){
     clearInterval(loops[uid]);
     delete loops[uid];
   }
+  localStorage.removeItem("uid_"+uid);
   db.ref("prediction/"+uid).remove();
-  st.innerText="SERVER OFF";
+  st.innerText="Server OFF";
 }
-</script>
 
-<!-- fake security lib -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/seedrandom/3.0.5/seedrandom.min.js"></script>
+/* ================= AUTO RESUME AFTER REFRESH ================= */
+window.addEventListener("load",()=>{
+  Object.keys(localStorage).forEach(k=>{
+    if(k.startsWith("uid_") && localStorage.getItem(k)==="on"){
+      const uid=k.replace("uid_","");
+      addUID();
+      document.getElementById("uid_"+uidCount).value=uid;
+      connect(uidCount);
+    }
+  });
+});
+
+/* ================= VISIBILITY KEEP ALIVE ================= */
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden){
+    Object.keys(loops).forEach(uid=>{
+      const st=document.querySelector(`#st_${uid}`);
+      if(st)send(uid,st);
+    });
+  }
+});
+</script>
 
 </body>
 </html>
